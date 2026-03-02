@@ -1,0 +1,60 @@
+{
+  "name": "error-sound",
+  "displayName": "Error Sound",
+  "description": "Plays a sound when terminal commands fail",
+  "version": "1.0.0",
+  "publisher": "your-name",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Error Sound",
+      "properties": {
+        "errorSound.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable/disable error sound"
+        },
+        "errorSound.volume": {
+          "type": "number",
+          "default": 0.5,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Sound volume (0-1)"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "errorSound.toggle",
+        "title": "Error Sound: Toggle On/Off"
+      },
+      {
+        "command": "errorSound.testSound",
+        "title": "Error Sound: Test Sound"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.74.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "play-sound": "^1.1.6"
+  }
+}
