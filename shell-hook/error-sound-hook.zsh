@@ -36,16 +36,16 @@ play_error_sound() {
         fi
     fi
 
-    # Play sound based on OS
+    # Play sound based on OS (wrapped in subshell to suppress job control messages)
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS - use afplay (built-in)
-        afplay -v "$ERROR_SOUND_VOLUME" "$sound_file" &>/dev/null &
+        (afplay -v "$ERROR_SOUND_VOLUME" "$sound_file" &>/dev/null &)
     elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
         # Linux - try paplay first, then aplay
         if command -v paplay &>/dev/null; then
-            paplay "$sound_file" &>/dev/null &
+            (paplay "$sound_file" &>/dev/null &)
         elif command -v aplay &>/dev/null; then
-            aplay -q "$sound_file" &>/dev/null &
+            (aplay -q "$sound_file" &>/dev/null &)
         fi
     fi
 }
