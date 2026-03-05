@@ -3,22 +3,32 @@ import * as path from 'path';
 import { exec } from 'child_process';
 
 let isEnabled = true;
+let lastSoundTime = 0;
+const DEBOUNCE_MS = 2000; // Don't play sounds more often than every 2 seconds
+let statusBarItem: vscode.StatusBarItem;
 
 export function activate(context: vscode.ExtensionContext) {
-    console.log('Error Sound extension is now active');
+    console.log('Cheda Error Sound extension is now active');
 
     const soundPath = path.join(context.extensionPath, 'sounds', 'error.mov');
+
+    // Create status bar item
+    statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+    statusBarItem.command = 'errorSound.toggle';
+    updateStatusBar();
+    statusBarItem.show();
 
     // Toggle command
     const toggleCommand = vscode.commands.registerCommand('errorSound.toggle', () => {
         isEnabled = !isEnabled;
-        vscode.window.showInformationMessage(`Error Sound: ${isEnabled ? 'Enabled' : 'Disabled'}`);
+        updateStatusBar();
+        vscode.window.showInformationMessage(`Cheda: ${isEnabled ? 'Enabled' : 'Disabled'}`);
     });
 
     // Test sound command
     const testSoundCommand = vscode.commands.registerCommand('errorSound.testSound', () => {
-        playSound(soundPath);
-        vscode.window.showInformationMessage('Playing test sound...');
+        playSound(soundPath, true);
+        vscode.window.showInformationMessage('Cheda: Playing test sound...');
     });
 
     // Listen to terminal shell integration for command completion
@@ -36,28 +46,27 @@ export function activate(context: vscode.ExtensionContext) {
         })
     );
 
-    // Fallback: Listen to diagnostics changes for code errors
-    context.subscriptions.push(
-        vscode.languages.onDidChangeDiagnostics((event) => {
-            if (!isEnabled) return;
-
-            for (const uri of event.uris) {
-                const diagnostics = vscode.languages.getDiagnostics(uri);
-                const hasErrors = diagnostics.some(d => d.severity === vscode.DiagnosticSeverity.Error);
-                
-                if (hasErrors) {
-                    // Debounce to avoid playing too many sounds
-                    playSound(soundPath);
-                    break;
-                }
-            }
-        })
-    );
-
-    context.subscriptions.push(toggleCommand, testSoundCommand);
+    context.subscriptions.push(toggleCommand, testSoundCommand, statusBarItem);
 }
 
-function playSound(soundPath: string): void {
+function updateStatusBar(): void {
+    if (isEnabled) {
+        statusBarItem.text = "$(unmute) Cheda";
+        statusBarItem.tooltip = "Cheda Error Sound: ON (click to toggle)";
+    } else {
+        statusBarItem.text = "$(mute) Cheda";
+        statusBarItem.tooltip = "Cheda Error Sound: OFF (click to toggle)";
+    }
+}
+
+function playSound(soundPath: string, force: boolean = false): void {
+    // Debounce - don't play sounds too frequently
+    const now = Date.now();
+    if (!force && (now - lastSoundTime) < DEBOUNCE_MS) {
+        return;
+    }
+    lastSoundTime = now;
+
     const config = vscode.workspace.getConfiguration('errorSound');
     const volume = config.get('volume', 0.5);
 
@@ -65,7 +74,7 @@ function playSound(soundPath: string): void {
     if (process.platform === 'darwin') {
         exec(`afplay -v ${volume} "${soundPath}"`, (err) => {
             if (err) {
-                console.error('Failed to play sound:', err);
+                console.error('Cheda: Failed to play sound:', err);
             }
         });
     } 
@@ -76,7 +85,7 @@ function playSound(soundPath: string): void {
                 // Fallback to aplay
                 exec(`aplay "${soundPath}"`, (err2) => {
                     if (err2) {
-                        console.error('Failed to play sound:', err2);
+                        console.error('Cheda: Failed to play sound:', err2);
                     }
                 });
             }
@@ -87,12 +96,15 @@ function playSound(soundPath: string): void {
         const cmd = `powershell -c "(New-Object Media.SoundPlayer '${soundPath}').PlaySync();"`;
         exec(cmd, (err) => {
             if (err) {
-                console.error('Failed to play sound:', err);
+                console.error('Cheda: Failed to play sound:', err);
             }
         });
     }
 }
 
 export function deactivate() {
-    console.log('Error Sound extension deactivated');
+    if (statusBarItem) {
+        statusBarItem.dispose();
+    }
+    console.log('Cheda Error Sound extension deactivated');
 }
