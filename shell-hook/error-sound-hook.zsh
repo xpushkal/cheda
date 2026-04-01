@@ -89,4 +89,3 @@ error_sound_test() {
 alias est='error_sound_toggle'
 alias estest='error_sound_test'
 
-echo "🔊 Error Sound Hook loaded. Use 'est' to toggle, 'estest' to test."
