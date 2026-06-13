@@ -44,7 +44,7 @@ const DEBOUNCE_MS = 2000; // Don't play sounds more often than every 2 seconds
 let statusBarItem;
 function activate(context) {
     console.log('Cheda Error Sound extension is now active');
-    const soundPath = path.join(context.extensionPath, 'sounds', 'error.mov');
+    const soundPath = path.join(context.extensionPath, 'sounds', 'error.wav');
     // Create status bar item
     statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
     statusBarItem.command = 'errorSound.toggle';
@@ -61,18 +61,26 @@ function activate(context) {
         playSound(soundPath, true);
         vscode.window.showInformationMessage('Cheda: Playing test sound...');
     });
-    // Listen to terminal shell integration for command completion
-    context.subscriptions.push(vscode.window.onDidEndTerminalShellExecution(async (event) => {
-        if (!isEnabled)
-            return;
-        const config = vscode.workspace.getConfiguration('errorSound');
-        if (!config.get('enabled', true))
-            return;
-        // Check if the command failed (non-zero exit code)
-        if (event.exitCode !== undefined && event.exitCode !== 0) {
-            playSound(soundPath);
-        }
-    }));
+    // Listen to terminal shell integration for command completion.
+    // This API was finalized in VS Code 1.93 - guard it so the extension
+    // still activates (status bar + commands) on older versions instead of crashing.
+    if (typeof vscode.window.onDidEndTerminalShellExecution === 'function') {
+        context.subscriptions.push(vscode.window.onDidEndTerminalShellExecution(async (event) => {
+            if (!isEnabled)
+                return;
+            const config = vscode.workspace.getConfiguration('errorSound');
+            if (!config.get('enabled', true))
+                return;
+            // Check if the command failed (non-zero exit code)
+            if (event.exitCode !== undefined && event.exitCode !== 0) {
+                playSound(soundPath);
+            }
+        }));
+    }
+    else {
+        vscode.window.showWarningMessage('Cheda: Terminal error detection needs VS Code 1.93+ with shell integration. ' +
+            'The test sound command still works.');
+    }
     context.subscriptions.push(toggleCommand, testSoundCommand, statusBarItem);
 }
 function updateStatusBar() {

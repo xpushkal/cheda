@@ -7,3 +7,6 @@ tsconfig.json
 **/*.ts
 node_modules/**
 images/**
+sounds/error.mov
+sounds/error.mp3
+*.vsix
